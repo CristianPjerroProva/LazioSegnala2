@@ -8,8 +8,10 @@ const STATUS = {
   inviata:    { label:'Inviata',         color:'#5A6872' },
   presa:      { label:'Presa in Carico', color:'#C97B00' },
   test:       { label:'In Test',         color:'#6B3FA0' },
+  chiarimenti: { label:'Chiarimenti Richiesti', color:'#DC2626' },
   completato: { label:'Completato',      color:'#008a4b' },
 }
+const MODULI = ['WEBSOR', 'MGO', 'MGEP', 'ALERTEAM']
 
 export default function RichiestePage() {
   const [profilo, setProfilo] = useState(null)
@@ -17,6 +19,7 @@ export default function RichiestePage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filtro, setFiltro] = useState('Tutti')
+  const [filtroModulo, setFiltroModulo] = useState('Tutti')
   const router = useRouter()
 
   useEffect(() => { checkUser() }, [])
@@ -26,9 +29,7 @@ export default function RichiestePage() {
     if (!session) { router.push('/login'); return }
     const { data } = await supabase.from('profili').select('*').eq('id', session.user.id).single()
     setProfilo(data)
-    let q = supabase.from('richieste').select('*,profili(nome,cognome)').order('created_at', { ascending: false })
-    if (data.ruolo !== 'admin') q = q.eq('user_id', data.id)
-    const { data: reqs } = await q
+    const { data: reqs } = await supabase.from('richieste').select('*,profili(nome,cognome)').order('created_at', { ascending: false })
     if (reqs) setRichieste(reqs)
     setLoading(false)
   }
@@ -36,7 +37,8 @@ export default function RichiestePage() {
   const filtered = richieste.filter(r => {
     const ms = r.titolo?.toLowerCase().includes(search.toLowerCase()) || r.descrizione?.toLowerCase().includes(search.toLowerCase())
     const mf = filtro === 'Tutti' || r.stato === filtro
-    return ms && mf
+    const mm = filtroModulo === 'Tutti' || r.modulo === filtroModulo
+    return ms && mf && mm
   })
 
   if (loading) {
@@ -77,7 +79,8 @@ export default function RichiestePage() {
           {search && <button onClick={()=>setSearch('')} style={{background:'none', border:'none', cursor:'pointer', color:'#9AA6B2', fontSize:'16px'}}>✕</button>}
         </div>
 
-        {/* Filtri */}
+        {/* Filtri Stato */}
+        <div style={{marginBottom:'8px', fontSize:'12px', color:'#9AA6B2', fontWeight:'600', textTransform:'uppercase'}}>Stato</div>
         <div
           style={{
             display: 'flex',
@@ -89,6 +92,23 @@ export default function RichiestePage() {
           {['Tutti', ...Object.keys(STATUS)].map(f => (
             <button key={f} onClick={()=>setFiltro(f)} style={{padding:'6px 16px', borderRadius:'20px', fontSize:'13px', fontWeight:'600', border:`1.5px solid ${filtro===f ? '#003087' : '#D6DAE2'}`, background:filtro===f ? '#003087' : 'white', color:filtro===f ? 'white' : '#5A6872', cursor:'pointer'}}>
               {f === 'Tutti' ? 'Tutti' : STATUS[f].label}
+            </button>
+          ))}
+        </div>
+
+        {/* Filtri Modulo */}
+        <div style={{marginBottom:'8px', fontSize:'12px', color:'#9AA6B2', fontWeight:'600', textTransform:'uppercase'}}>Modulo</div>
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            marginBottom: '16px',
+            flexWrap: 'wrap',
+          }}
+        >
+          {['Tutti', ...MODULI].map(m => (
+            <button key={m} onClick={()=>setFiltroModulo(m)} style={{padding:'6px 16px', borderRadius:'20px', fontSize:'13px', fontWeight:'600', border:`1.5px solid ${filtroModulo===m ? '#003087' : '#D6DAE2'}`, background:filtroModulo===m ? '#003087' : 'white', color:filtroModulo===m ? 'white' : '#5A6872', cursor:'pointer'}}>
+              {m}
             </button>
           ))}
         </div>

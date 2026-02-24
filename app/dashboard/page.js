@@ -8,9 +8,49 @@ const STATUS = {
   inviata:    { label:'Inviata',         color:'#5A6872' },
   presa:      { label:'Presa in Carico', color:'#C97B00' },
   test:       { label:'In Test',         color:'#6B3FA0' },
+  chiarimenti: { label:'Chiarimenti Richiesti', color:'#DC2626' },
   completato: { label:'Completato',      color:'#008a4b' },
 }
 const CATS = ['Bug', 'Miglioramento', 'Nuova funzione', 'Altro']
+const MODULI = ['WEBSOR', 'MGO', 'MGEP', 'ALERTEAM']
+const CAT_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A']
+const MOD_COLORS = ['#0052CC', '#5B21B6', '#EA580C', '#16A34A']
+
+function PieChart({ data, colors, size = 200 }) {
+  const total = data.reduce((a, b) => a + b, 0)
+  if (total === 0) return <div style={{textAlign:'center', color:'#9AA6B2', padding:'24px'}}>Nessun dato disponibile</div>
+  
+  let currentAngle = -90
+  const slices = data.map((value, i) => {
+    const percentage = value / total
+    const angle = percentage * 360
+    const startAngle = currentAngle
+    const endAngle = currentAngle + angle
+    
+    const startRad = (startAngle * Math.PI) / 180
+    const endRad = (endAngle * Math.PI) / 180
+    const cx = size / 2, cy = size / 2, r = size / 2 - 8
+    
+    const x1 = cx + r * Math.cos(startRad)
+    const y1 = cy + r * Math.sin(startRad)
+    const x2 = cx + r * Math.cos(endRad)
+    const y2 = cy + r * Math.sin(endRad)
+    
+    const largeArc = angle > 180 ? 1 : 0
+    const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`
+    
+    currentAngle = endAngle
+    return { pathData, color: colors[i % colors.length], percentage }
+  })
+  
+  return (
+    <svg width={size} height={size} style={{marginBottom:'12px'}}>
+      {slices.map((slice, i) => (
+        <path key={i} d={slice.pathData} fill={slice.color} stroke="white" strokeWidth="2" />
+      ))}
+    </svg>
+  )
+}
 
 export default function DashboardPage() {
   const [profilo, setProfilo] = useState(null)
@@ -42,6 +82,7 @@ export default function DashboardPage() {
 
   const total = richieste.length
   const maxCat = Math.max(...CATS.map(c => richieste.filter(r=>r.categoria===c).length), 1)
+  const maxMod = Math.max(...MODULI.map(m => richieste.filter(r=>r.modulo===m).length), 1)
 
   return (
     <Layout profilo={profilo}>
@@ -83,6 +124,43 @@ export default function DashboardPage() {
           ))}
         </div>
 
+        {/* Grafico moduli */}
+        <div
+          className="card"
+          style={{ padding: '24px', marginBottom: '16px' }}
+        >
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: 700,
+              color: 'var(--blu-dark)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              marginBottom: '24px',
+            }}
+          >
+            Richieste per Modulo
+          </div>
+          <div style={{display:'flex', gap:'32px', alignItems:'flex-start'}}>
+            <div>
+              <PieChart data={MODULI.map(m => richieste.filter(r=>r.modulo===m).length)} colors={MOD_COLORS} size={180} />
+            </div>
+            <div style={{flex:1}}>
+              {MODULI.map((m, i) => {
+                const n = richieste.filter(r=>r.modulo===m).length
+                const pct = total > 0 ? ((n / total) * 100).toFixed(1) : 0
+                return (
+                  <div key={m} style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px'}}>
+                    <div style={{width:'12px', height:'12px', borderRadius:'2px', background:MOD_COLORS[i % MOD_COLORS.length], flexShrink:0}}></div>
+                    <div style={{fontSize:'13px', color:'#5A6872', flex:1}}>{m}</div>
+                    <div style={{fontSize:'13px', fontWeight:'600', color:'#003087', minWidth:'45px', textAlign:'right'}}>{n} ({pct}%)</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
         {/* Grafico categorie */}
         <div
           className="card"
@@ -95,73 +173,29 @@ export default function DashboardPage() {
               color: 'var(--blu-dark)',
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
-              marginBottom: '16px',
+              marginBottom: '24px',
             }}
           >
-            Richieste per categoria
+            Richieste per Categoria
           </div>
-          {CATS.map(c => {
-            const n = richieste.filter(r=>r.categoria===c).length
-            return (
-              <div
-                key={c}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '12px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: '#5A6872',
-                    width: '120px',
-                    textAlign: 'right',
-                    flexShrink: 0,
-                  }}
-                >
-                  {c}
-                </div>
-                <div
-                  style={{
-                    flex: 1,
-                    background: '#F5F6F7',
-                    borderRadius: '3px',
-                    height: '22px',
-                    overflow: 'hidden',
-                    border: '1px solid #E8EAEC',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${(n / maxCat) * 100}%`,
-                      height: '100%',
-                      background: '#003087',
-                      borderRadius: '3px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      paddingRight: '8px',
-                      transition: 'width .6s ease',
-                    }}
-                  >
-                    {n > 0 && (
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: '700',
-                          color: 'white',
-                        }}
-                      >
-                        {n}
-                      </span>
-                    )}
+          <div style={{display:'flex', gap:'32px', alignItems:'flex-start'}}>
+            <div>
+              <PieChart data={CATS.map(c => richieste.filter(r=>r.categoria===c).length)} colors={CAT_COLORS} size={180} />
+            </div>
+            <div style={{flex:1}}>
+              {CATS.map((c, i) => {
+                const n = richieste.filter(r=>r.categoria===c).length
+                const pct = total > 0 ? ((n / total) * 100).toFixed(1) : 0
+                return (
+                  <div key={c} style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px'}}>
+                    <div style={{width:'12px', height:'12px', borderRadius:'2px', background:CAT_COLORS[i % CAT_COLORS.length], flexShrink:0}}></div>
+                    <div style={{fontSize:'13px', color:'#5A6872', flex:1}}>{c}</div>
+                    <div style={{fontSize:'13px', fontWeight:'600', color:'#003087', minWidth:'45px', textAlign:'right'}}>{n} ({pct}%)</div>
                   </div>
-                </div>
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Richieste recenti */}
@@ -205,7 +239,7 @@ export default function DashboardPage() {
                 />
                 <div style={{flex:1, overflow:'hidden'}}>
                   <div style={{fontSize:'13px', fontWeight:'700', color:'#17324D', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{r.titolo}</div>
-                  <div style={{fontSize:'11px', color:'#9AA6B2', marginTop:'2px'}}>{r.profili?.nome} {r.profili?.cognome} · {new Date(r.created_at).toLocaleDateString('it-IT')}</div>
+                  <div style={{fontSize:'11px', color:'#9AA6B2', marginTop:'2px'}}>{r.profili?.nome} {r.profili?.cognome} · {r.modulo} · {new Date(r.created_at).toLocaleDateString('it-IT')}</div>
                 </div>
                 <span style={{fontSize:'16px', color:'#9AA6B2'}}>›</span>
               </div>

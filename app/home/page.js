@@ -36,6 +36,13 @@ export default function HomePage() {
   return (
     <Layout profilo={profilo}>
       <div style={{ padding: '32px 20px', maxWidth: '900px', margin: '0 auto' }}>
+        {/* Avviso Chiarimenti */}
+        {richieste.filter(r => r.stato === 'chiarimenti' && r.user_id === profilo?.id).length > 0 && (
+          <div onClick={() => { const req = richieste.find(r => r.stato === 'chiarimenti' && r.user_id === profilo?.id); if (req) router.push(`/richieste/${req.id}`); }} style={{background:'#FEF2F2', borderLeft:'4px solid #DC2626', borderRadius:'0 8px 8px 0', padding:'16px', marginBottom:'24px', fontSize:'14px', color:'#DC2626', cursor:'pointer', transition:'background 0.2s'}} onMouseEnter={e => e.currentTarget.style.background='#FEC5C5'} onMouseLeave={e => e.currentTarget.style.background='#FEF2F2'}>
+            <strong style={{display:'block', marginBottom:'4px'}}>⚠️ Richieste in Chiarimenti</strong>
+            Hai {richieste.filter(r => r.stato === 'chiarimenti' && r.user_id === profilo?.id).length} richiesta/e che richiedono chiarimenti. Clicca per visualizzare.
+          </div>
+        )}
         {/* Hero */}
         <div className="page-hero fade-in">
           <div className="page-hero-eyebrow">
@@ -60,8 +67,7 @@ export default function HomePage() {
           {[
             { label:'Totale Richieste', value: richieste.length, color:'#003087' },
             { label:'Inviata', value: richieste.filter(r=>r.stato==='inviata').length, color:'#5A6872' },
-            { label:'Presa in Carico', value: richieste.filter(r=>r.stato==='presa').length, color:'#C97B00' },
-            { label:'Completato', value: richieste.filter(r=>r.stato==='completato').length, color:'#008a4b' },
+            { label:'Presa in Carico', value: richieste.filter(r=>r.stato==='presa').length, color:'#C97B00' },            { label:'Chiarimenti Richiesti', value: richieste.filter(r=>r.stato==='chiarimenti').length, color:'#DC2626' },            { label:'Completato', value: richieste.filter(r=>r.stato==='completato').length, color:'#008a4b' },
           ].map((s, i) => (
             <div
               key={i}

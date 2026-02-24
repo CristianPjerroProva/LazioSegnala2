@@ -4,11 +4,13 @@ import { supabase } from '../lib/supabase'
 import { useRouter } from 'next/navigation'
 import Layout from '../components/Layout'
 
-const CATS = ['Bug', 'Miglioramento', 'Nuova funzione', 'Altro']
+const MODULI = ['WEBSOR', 'MGO', 'MGEP', 'ALERTEAM']
+
+const TIPI_RICHIESTA = ['Bug', 'Miglioramento', 'Nuova funzione', 'Altro']
 
 export default function NuovaRichiesta() {
   const [profilo, setProfilo] = useState(null)
-  const [form, setForm] = useState({ titolo: '', descrizione: '', categoria: 'Bug' })
+  const [form, setForm] = useState({ titolo: '', descrizione: '', modulo: '', tipo: 'Bug' })
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
   const [error, setError] = useState('')
@@ -26,17 +28,19 @@ export default function NuovaRichiesta() {
 
   async function handleSubmit() {
     setError('')
-    if (!form.titolo || !form.descrizione) { setError('Titolo e descrizione sono obbligatori'); return }
+    if (!form.titolo || !form.descrizione || !form.modulo || !form.tipo) { setError('Compila tutti i campi obbligatori'); return }
     setLoading(true)
     const { data: req, error: err } = await supabase.from('richieste').insert({
       user_id: profilo.id,
       titolo: form.titolo,
       descrizione: form.descrizione,
-      categoria: form.categoria,
+      modulo: form.modulo,
+      tipo: form.tipo,
+      categoria: form.tipo,
       stato: 'inviata'
     }).select().single()
 
-    if (err) { setError('Errore durante l\'invio. Riprova.'); setLoading(false); return }
+    if (err) { console.error('Supabase insert error:', err); setError(err.message || err.details || JSON.stringify(err)); setLoading(false); return }
 
     await supabase.from('timeline').insert({
       richiesta_id: req.id,
@@ -82,17 +86,34 @@ export default function NuovaRichiesta() {
             />
           </div>
 
-          {/* Categoria */}
+          
+
+          {/* Modulo */}
           <div style={{marginBottom:'20px'}}>
             <label style={{display:'block', fontSize:'13px', fontWeight:'700', color:'#5A6872', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.5px'}}>
-              Categoria
+              Modulo *
             </label>
             <select
-              value={form.categoria}
-              onChange={e=>setForm({...form, categoria:e.target.value})}
+              value={form.modulo}
+              onChange={e=>setForm({...form, modulo:e.target.value})}
               style={{width:'100%', padding:'12px 14px', border:'2px solid #D6DAE2', borderRadius:'8px', fontSize:'15px', fontFamily:'inherit', outline:'none', background:'white', boxSizing:'border-box'}}
             >
-              {CATS.map(c => <option key={c}>{c}</option>)}
+              <option value="">Seleziona un modulo</option>
+              {MODULI.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+
+          {/* Tipo richiesta */}
+          <div style={{marginBottom:'20px'}}>
+            <label style={{display:'block', fontSize:'13px', fontWeight:'700', color:'#5A6872', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.5px'}}>
+              Tipo richiesta *
+            </label>
+            <select
+              value={form.tipo}
+              onChange={e=>setForm({...form, tipo:e.target.value})}
+              style={{width:'100%', padding:'12px 14px', border:'2px solid #D6DAE2', borderRadius:'8px', fontSize:'15px', fontFamily:'inherit', outline:'none', background:'white', boxSizing:'border-box'}}
+            >
+              {TIPI_RICHIESTA.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
 

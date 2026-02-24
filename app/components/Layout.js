@@ -73,17 +73,30 @@ export default function Layout({ children, profilo }) {
               Home
             </Link>
             {profilo?.ruolo === 'admin' && (
-              <Link
-                href="/dashboard"
-                style={{
-                  textDecoration: 'none',
-                  color: 'var(--blu-dark)',
-                  fontWeight: 500,
-                  fontSize: '14px',
-                }}
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  style={{
+                    textDecoration: 'none',
+                    color: 'var(--blu-dark)',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                  }}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/admin/utenti"
+                  style={{
+                    textDecoration: 'none',
+                    color: 'var(--blu-dark)',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                  }}
+                >
+                  Utenti
+                </Link>
+              </>
             )}
             <Link
               href="/richieste"
@@ -95,6 +108,17 @@ export default function Layout({ children, profilo }) {
               }}
             >
               Richieste
+            </Link>
+            <Link
+              href="/profilo"
+              style={{
+                textDecoration: 'none',
+                color: 'var(--blu-dark)',
+                fontWeight: 500,
+                fontSize: '14px',
+              }}
+            >
+              Profilo
             </Link>
             <Link
               href="/nuova-richiesta"

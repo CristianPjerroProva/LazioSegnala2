@@ -8,6 +8,7 @@ const STATUS = {
   inviata:    { label:'Inviata',         color:'#5A6872' },
   presa:      { label:'Presa in Carico', color:'#C97B00' },
   test:       { label:'In Test',         color:'#6B3FA0' },
+  chiarimenti: { label:'Chiarimenti Richiesti', color:'#DC2626' },
   completato: { label:'Completato',      color:'#008a4b' },
 }
 
@@ -16,6 +17,8 @@ export default function DettaglioPage() {
   const [richiesta, setRichiesta] = useState(null)
   const [loading, setLoading] = useState(true)
   const [nota, setNota] = useState('')
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailStatus, setEmailStatus] = useState('')
   const router = useRouter()
   const { id } = useParams()
 
@@ -42,6 +45,50 @@ export default function DettaglioPage() {
     await supabase.from('richieste').update({ note_admin: nota }).eq('id', id)
     await supabase.from('timeline').insert({ richiesta_id: id, label: 'Nota aggiunta', by_chi: 'Admin', colore: '#0066CC' })
     checkUser()
+  }
+
+  async function inviaEmail() {
+    // prova prima con richiesta.email, poi con profili
+    let destinatario = richiesta?.email || richiesta?.profili?.email
+    let nomeDest = richiesta?.profili?.nome
+    let cognomeDest = richiesta?.profili?.cognome
+    if (!destinatario && Array.isArray(richiesta?.profili) && richiesta.profili.length) {
+      destinatario = richiesta.profili[0]?.email
+      nomeDest = richiesta.profili[0]?.nome
+      cognomeDest = richiesta.profili[0]?.cognome
+    }
+    console.log('destinatario:', destinatario)
+    if (!destinatario) { setEmailStatus('Nessuna email disponibile'); return }
+    if (!nota) { setEmailStatus('Inserisci un messaggio nella nota prima di inviare'); return }
+    setEmailLoading(true)
+    setEmailStatus('')
+    try {
+      console.log('inviaEmail chiamata', destinatario)
+      console.log('Invio email a:', destinatario, 'nome:', nomeDest, 'cognome:', cognomeDest)
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: destinatario,
+          nome: `${nomeDest || ''} ${cognomeDest || ''}`.trim(),
+          titolo: richiesta.titolo,
+          messaggio: nota,
+          richiesta_id: id
+        })
+      })
+      console.log('risposta API:', res.status)
+      const data = await res.json()
+      if (data?.success) {
+        setEmailStatus('Email inviata con successo')
+        checkUser()
+      } else {
+        const errMsg = data?.error || 'Errore durante l\'invio'
+        setEmailStatus(errMsg)
+      }
+    } catch (err) {
+      setEmailStatus(err.message || String(err))
+    }
+    setEmailLoading(false)
   }
 
   if (loading) {
@@ -142,9 +189,10 @@ export default function DettaglioPage() {
           </div>
         </div>
 
-        {/* Badge stato */}
+        {/* Badge stato, modulo e categoria */}
         <div style={{display:'flex', gap:'8px', marginBottom:'16px', flexWrap:'wrap'}}>
           <span style={{padding:'4px 12px', borderRadius:'3px', fontSize:'12px', fontWeight:'700', background:`${st.color}20`, color:st.color}}>{st.label}</span>
+          {richiesta.modulo && <span style={{padding:'4px 12px', borderRadius:'3px', fontSize:'12px', fontWeight:'700', background:'#F0FDF4', color:'#15803D'}}>{richiesta.modulo}</span>}
           <span style={{padding:'4px 12px', borderRadius:'3px', fontSize:'12px', fontWeight:'700', background:'#E8F1FB', color:'#0066CC'}}>{richiesta.categoria}</span>
         </div>
 
@@ -233,9 +281,12 @@ export default function DettaglioPage() {
             </div>
 
             <div style={{background:'white', borderRadius:'8px', padding:'20px', border:'1px solid #D6DAE2', marginBottom:'16px'}}>
-              <div style={{fontSize:'11px', fontWeight:'700', color:'#9AA6B2', textTransform:'uppercase', letterSpacing:'1px', marginBottom:'8px'}}>Note Interne</div>
+              <div style={{fontSize:'11px', fontWeight:'700', color:'#9AA6B2', textTransform:'uppercase', letterSpacing:'1px', marginBottom:'8px'}}>Note</div>
               <textarea value={nota} onChange={e=>setNota(e.target.value)} placeholder="Aggiungi note visibili al richiedente..." style={{width:'100%', padding:'12px', border:'2px solid #D6DAE2', borderRadius:'8px', fontSize:'14px', minHeight:'80px', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit'}}/>
-              <button onClick={salvaNota} style={{marginTop:'8px', padding:'12px 24px', background:'#003087', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'700', fontSize:'14px', fontFamily:'inherit'}}>Salva nota</button>
+              <div style={{display:'flex', gap:'8px', marginTop:'8px'}}>
+                <button onClick={salvaNota} style={{flex:1, padding:'12px 24px', background:'#003087', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'700', fontSize:'14px', fontFamily:'inherit'}}>Salva nota</button>
+              </div>
+              {emailStatus && <div style={{marginTop:'8px', fontSize:'13px', color: emailStatus.includes('successo') ? '#0b8043' : '#CC334D'}}>{emailStatus}</div>}
             </div>
           </>
         )}

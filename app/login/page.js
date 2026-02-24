@@ -290,6 +290,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={userPassword}
                   onChange={e => setUserPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !userLoading) { userMode === 'login' ? handleUserLogin() : handleUserRegister() } }}
                 />
               </div>
 
@@ -342,6 +343,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={adminPassword}
                   onChange={e => setAdminPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !adminLoading) handleAdminLogin() }}
                 />
               </div>
 
