@@ -1,7 +1,4 @@
-import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 const supabaseServer = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
@@ -44,12 +41,7 @@ export async function POST(req) {
       </html>
     `
 
-    await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to,
-      subject: `Aggiornamento richiesta: ${titolo}`,
-      html,
-    })
+    // Email disabilitata - modulo Resend rimosso
 
     // Inserisci evento in timeline se è stato fornito l'id della richiesta
     if (richiesta_id) {
